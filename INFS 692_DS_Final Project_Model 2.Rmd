@@ -1,0 +1,137 @@
+---
+title: "Untitled"
+author: "Ying Luo"
+output: pdf_document
+date: "2022-12-16"
+---
+
+Helper packages
+```{r}
+library(keras)
+library(caret)
+library(rsample)   
+library(recipes)
+```
+
+
+Load the dataset
+```{r}
+library(readr)
+df = read.csv("radiomics_completedata.csv")
+```
+
+
+Investigate the statistics of the dataset
+Output would not be presented to save pages
+```{r eval=FALSE}
+summary(df)
+```
+
+
+Remove NA
+```{r}
+df <- na.omit(df)
+```
+
+
+Investigate the cleaned data
+Output would not be presented to save pages
+```{r eval=FALSE}
+head(df)
+```
+
+
+Split the training data and testing data by 7 : 3
+Extract the features and labels
+```{r}
+index<-createDataPartition(df$Failure.binary,p=0.7,list=F)
+
+x_train <- data.matrix(df[index,-2])
+y_train <- df[index,2]
+x_test <- data.matrix(df[-index,-2])
+y_test <- df[-index,2]
+```
+
+
+Convert features (x) to matrix and labels (y) to the binary variable 
+```{r}
+as.matrix(apply(x_train, 2, function(x) (x-min(x))/(max(x) - min(x)))) ->
+  x_train
+
+as.matrix(apply(x_test, 2, function(x) (x-min(x))/(max(x) - min(x)))) -> 
+  x_test
+
+to_categorical(y_train, num_classes = 2) -> y_train
+to_categorical(y_test, num_classes = 2) -> y_test
+
+```
+
+
+Create five hidden layers with 256, 128, 128, 64 and 64 neurons, respectively 
+with activation functions of Sigmoid
+Create an output layer with two neurons respectively with activation functions 
+of Softmax
+Every layer is followed by a dropout to avoid overfitting
+```{r}
+model <- keras_model_sequential()
+
+model %>%
+  layer_dense(units=256,activation = "sigmoid",input_shape =ncol(y_train))%>%
+  layer_dropout(rate = 0.25) %>% 
+  
+  layer_dense(units = 128, activation = "sigmoid") %>%
+  layer_dropout(rate = 0.25) %>%
+  
+  layer_dense(units = 128, activation = "sigmoid") %>%
+  layer_dropout(rate = 0.25) %>%
+  
+  layer_dense(units = 64, activation = "sigmoid") %>%
+  layer_dropout(rate = 0.25) %>%
+  
+  layer_dense(units = 64, activation = "sigmoid") %>%
+  layer_dropout(rate = 0.25) %>%
+  
+  layer_dense(units = 2, activation = "softmax")
+```
+
+
+backpropagation compiler approach
+```{r}
+model %>% compile(
+  loss = "categorical_crossentropy",
+  optimizer = optimizer_rmsprop(),
+  metrics = c("accuracy")
+)
+```
+
+
+Adam compiler approach
+```{r}
+model %>% compile(
+  loss = "categorical_crossentropy",
+  optimizer = optimizer_adam(),
+  metrics = c("accuracy")
+)
+```
+
+
+Train the model with epoch = 10, batch size = 128 and validation split = 0.15
+```{r}
+model_training <- model %>% 
+  fit(x_train, y_train, epochs = 50, batch_size = 128, validation_split = 0.15)
+```
+
+
+Evaluate the trained model using the testing dataset.
+```{r}
+model %>%
+  evaluate(x_test, y_test)
+```
+
+
+Get the model prediction using the testing dataset
+```{r}
+model %>%
+  predict_classes(x_test)
+```
+
