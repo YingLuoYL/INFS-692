@@ -10,6 +10,6 @@ Setup packages includes:
 3. Model 3: dplyr, ggplot, stringr, gridExtra; and modeling packages: tidyverse, cluster, factoextra
 
 Specific data preprocessing:
-1.	Standardization for features 
-2.	One hot encoding for the labels
-3.	Standardization for features and removing the label from the original dataset for unsupervised learning
+1.	Model 1: standardization for features 
+2.	Model 2: one hot encoding for the labels
+3.	Model 3: standardization for features and removing the label from the original dataset for unsupervised learning
